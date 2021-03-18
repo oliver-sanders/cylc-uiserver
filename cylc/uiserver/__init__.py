@@ -13,4 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
+
+LOG = logging.getLogger('cylc')
+
 __version__ = "0.3.dev"

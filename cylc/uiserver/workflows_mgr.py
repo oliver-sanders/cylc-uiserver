@@ -25,7 +25,6 @@ Includes:
 import asyncio
 from contextlib import suppress
 from getpass import getuser
-import logging
 import socket
 
 import zmq.asyncio
@@ -44,7 +43,8 @@ from cylc.flow.network.scan import (
 )
 from cylc.flow.suite_files import ContactFileFields as CFF
 
-logger = logging.getLogger(__name__)
+from cylc.uiserver import LOG
+
 CLIENT_TIMEOUT = 2.0
 
 
@@ -69,10 +69,10 @@ async def workflow_request(client, command, args=None,
         result = await client.async_request(command, args, timeout)
         return (req_context, result)
     except ClientTimeout as exc:
-        logger.exception(exc)
+        LOG.exception(exc)
         return (req_context, MSG_TIMEOUT)
     except ClientError as exc:
-        logger.exception(exc)
+        LOG.exception(exc)
         return (req_context, None)
 
 
@@ -84,7 +84,7 @@ async def est_workflow(reg, host, port, pub_port, context=None, timeout=None):
         except socket.error as exc:
             if flags.debug:
                 raise
-            logger.error("ERROR: %s: %s\n", exc, host)
+            LOG.error("ERROR: %s: %s\n", exc, host)
             return (reg, host, port, pub_port, None)
 
     # NOTE: Connect to the suite by host:port. This way the
@@ -295,8 +295,10 @@ class WorkflowsManager:
         res = []
         for result in results:
             if isinstance(result, Exception):
-                logger.exception('Failed to send requests to '
-                                 'multiple workflows', exc_info=result)
+                LOG.exception(
+                    'Failed to send requests to multiple workflows',
+                    exc_info=result
+                )
             else:
                 _, val = result
                 res.extend([

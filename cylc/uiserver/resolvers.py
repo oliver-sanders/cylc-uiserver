@@ -16,18 +16,17 @@
 """GraphQL resolvers for use in data accessing and mutation of workflows."""
 
 import getpass
-import logging
 import os
 from subprocess import Popen, PIPE, DEVNULL
 
 from cylc.flow.network.resolvers import BaseResolvers
 from cylc.flow.data_store_mgr import WORKFLOW
 
+from cylc.uiserver import LOG
+
 
 # show traceback from cylc commands
 DEBUG = True
-
-logger = logging.getLogger(__name__)
 
 
 def snake_to_kebab(snake):
@@ -135,7 +134,7 @@ class Services:
                 cmd_repr = ' '.join(cmd)
                 if cylc_version:
                     cmd_repr = f'CYLC_VERSION={cylc_version} {cmd_repr}'
-                logger.info(f'$ {cmd_repr}')
+                LOG.info(f'$ {cmd_repr}')
 
                 # run cylc run
                 proc = Popen(

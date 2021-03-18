@@ -15,12 +15,11 @@
 
 """Tests for the ``data_store_mgr`` module and its objects and functions."""
 
-import logging
-
 import pytest
 from cylc.flow.network import MSG_TIMEOUT
 from cylc.flow.suite_files import ContactFileFields as CFF
 
+from cylc.uiserver import LOG
 import cylc.uiserver.data_store_mgr as data_store_mgr_module
 from cylc.uiserver.data_store_mgr import DataStoreMgr
 from .conftest import AsyncClientFixture
@@ -113,8 +112,7 @@ async def test_entire_workflow_update_gather_error(
     # Call the entire_workflow_update function.
     # This should use the client defined above (``async_client``) when
     # calling ``workflow_request``.
-    logger = logging.getLogger(data_store_mgr_module.__name__)
-    mocked_exception_function = mocker.patch.object(logger, 'exception')
+    mocked_exception_function = mocker.patch.object(LOG, 'exception')
     await data_store_mgr.entire_workflow_update()
     mocked_exception_function.assert_called_once()
     assert mocked_exception_function.call_args[1][

@@ -16,7 +16,6 @@
 
 import argparse
 import json
-import logging
 import os
 import signal
 from functools import partial
@@ -43,7 +42,8 @@ from jupyterhub.utils import url_path_join
 
 from cylc.uiserver import (
     __version__,
-    __file__ as uis_pkg
+    __file__ as uis_pkg,
+    LOG,
 )
 from cylc.uiserver.config import __file__ as CONFIG_FILE
 from .data_store_mgr import DataStoreMgr
@@ -59,14 +59,12 @@ from .schema import schema
 from .websockets.tornado import TornadoSubscriptionServer
 from .workflows_mgr import WorkflowsManager
 
-logger = logging.getLogger(__name__)
-
 
 class MyApplication(web.Application):
     is_closing = False
 
     def signal_handler(self, signum, frame):
-        logger.info('exiting...')
+        LOG.info('exiting...')
         self.is_closing = True
 
     def try_exit(self, uis):
@@ -81,7 +79,7 @@ class MyApplication(web.Application):
             # Destroy ZeroMQ context of all sockets
             uis.workflows_mgr.context.destroy()
             ioloop.IOLoop.instance().stop()
-            logger.info('exit success')
+            LOG.info('exit success')
 
 
 class CylcUIServer(Application):
@@ -204,7 +202,7 @@ class CylcUIServer(Application):
         Args:
             debug (bool): flag to set debugging in the Tornado application
         """
-        logger.info(self.ui_path)
+        LOG.info(self.ui_path)
         # subscription/websockets server
         subscription_server = TornadoSubscriptionServer(
             schema,
@@ -295,16 +293,17 @@ def main():
 
     jupyterhub_service_prefix = os.environ.get(
         'JUPYTERHUB_SERVICE_PREFIX', '/')
-    logger.info(f"JupyterHub Service Prefix: {jupyterhub_service_prefix}")
+    LOG.info(f"JupyterHub Service Prefix: {jupyterhub_service_prefix}")
     ui_server = CylcUIServer(
         port=args.port,
         static=args.static,
         jupyter_hub_service_prefix=jupyterhub_service_prefix
     )
-    logger.info(f"Listening on {args.port} and serving static content from "
-                f"{args.static}")
-
-    logger.info("Starting Cylc UI")
+    LOG.info(
+        f"Listening on {args.port} and serving static content from "
+        f"{args.static}"
+    )
+    LOG.info("Starting Cylc UI")
     ui_server.start(args.debug)
 
 

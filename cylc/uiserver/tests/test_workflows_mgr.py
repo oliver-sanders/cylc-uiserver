@@ -30,6 +30,7 @@ from cylc.flow.suite_files import (
     ContactFileFields as CFF,
 )
 
+from cylc.uiserver import LOG
 from cylc.uiserver.main import CylcUIServer
 import cylc.uiserver.workflows_mgr as workflows_mgr_module
 from cylc.uiserver.workflows_mgr import (
@@ -55,7 +56,7 @@ async def test_workflow_request_client_timeout(
 @pytest.mark.asyncio
 async def test_workflow_request_client_error(
         async_client: AsyncClientFixture, caplog):
-    caplog.set_level(logging.CRITICAL, logger='cylc')
+    caplog.set_level(logging.CRITICAL, logger=LOG.name)
     async_client.will_return(ClientError)
     ctx, msg = await workflow_request(client=async_client, command='')
     assert not ctx
@@ -307,8 +308,7 @@ async def test_multi_request_gather_errors(
         'req_client': async_client
     }
 
-    logger = logging.getLogger(workflows_mgr_module.__name__)
-    mocked_exception_function = mocker.patch.object(logger, 'exception')
+    mocked_exception_function = mocker.patch.object(LOG, 'exception')
     await workflows_manager.multi_request('', [workflow_id], None, None)
     mocked_exception_function.assert_called_once()
     assert mocked_exception_function.call_args[1][

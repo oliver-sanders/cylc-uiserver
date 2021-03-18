@@ -21,11 +21,11 @@ from typing import (
     Optional
 )
 import functools
-from tornado.web import RequestHandler, HTTPError
 import logging
 
+from tornado.web import RequestHandler, HTTPError
 
-logger = logging.getLogger(__name__)
+from cylc.uiserver import LOG
 
 
 def authenticated(
@@ -51,8 +51,8 @@ def authenticated(
             self: RequestHandler, *args, **kwargs
     ) -> Optional[Awaitable[None]]:
         if not self.current_user:
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug('Unauthenticated WebSocket request!')
+            if LOG.isEnabledFor(logging.DEBUG):
+                LOG.debug('Unauthenticated WebSocket request!')
             raise HTTPError(403)
 
         return method(self, *args, **kwargs)
