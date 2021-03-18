@@ -20,7 +20,6 @@ import os
 import signal
 from functools import partial
 from logging.config import dictConfig
-from os.path import join, abspath, dirname
 from pathlib import Path
 from typing import Any, Tuple, Type
 
@@ -279,11 +278,15 @@ def main():
     parser.add_argument('-s', '--static', action="store", dest="static")
     parser.add_argument('--debug', action="store_true", dest="debug",
                         default=False)
-    here = abspath(dirname(__file__))
-    parser.add_argument('--logging-config', type=argparse.FileType('r'),
-                        help='path to logging configuration file',
-                        action="store", dest="logging_config",
-                        default=join(here, 'logging_config.json'))
+
+    parser.add_argument(
+        '--logging-config',
+        type=argparse.FileType('r'),
+        help='path to logging configuration file',
+        action="store",
+        dest="logging_config",
+        default=str(Path(uis_pkg).parent / 'uis_logging_config.json')
+    )
     args = parser.parse_known_args()[0]
 
     # args.logging_config will be a io.TextIOWrapper resource

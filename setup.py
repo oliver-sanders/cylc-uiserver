@@ -77,7 +77,7 @@ setup(
     packages=find_namespace_packages(include=["cylc.*"]),
     package_data={
         'cylc.uiserver': [
-            'logging_config.json',
+            'uis_logging_config.json',
             'logo.svg'
         ]
     },

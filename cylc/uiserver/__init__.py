@@ -15,6 +15,6 @@
 
 import logging
 
-LOG = logging.getLogger('cylc')
+LOG = logging.getLogger('cylc.uiserver')
 
 __version__ = "0.3.dev"
