@@ -13,9 +13,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import json
-import os
 from asyncio import Queue
+import functools
+import getpass
+import json
+import logging
+import os
 
 from graphene_tornado.tornado_graphql_handler import TornadoGraphQLHandler
 from graphql import get_default_backend
@@ -26,6 +29,9 @@ from tornado import web, websocket
 from tornado.ioloop import IOLoop
 
 from .websockets import authenticated as websockets_authenticated
+
+
+logger = logging.getLogger(__name__)
 
 
 class BaseHandler(web.RequestHandler):
@@ -50,6 +56,29 @@ class APIHandler(BaseHandler):
         self.set_header("Content-Type", 'application/json')
 
 
+ME = getpass.getuser()
+
+
+def authorised(fun):
+    """Provides Cylc authorisation for multi-user setups.
+
+    Works with HTTP(s) connections, note websockets are upgraded from
+    HTTP(s) connections.
+    """
+
+    @functools.wraps(fun)
+    def _inner(self, *args, **kwargs):
+        nonlocal fun
+        user = self.get_current_user()
+        username = user.get('name', '?')
+        if username != ME:
+            logger.info(f'Authorisation failed for {username}')
+            self.set_status(403)
+            return
+        fun(self, *args, **kwargs)
+    return _inner
+
+
 class MainHandler(HubOAuthenticated, BaseHandler):
 
     # hub_users = ["kinow"]
@@ -61,14 +90,21 @@ class MainHandler(HubOAuthenticated, BaseHandler):
 
     @web.addslash
     @web.authenticated
+    @authorised
     def get(self):
         """Render the UI prototype."""
         index = os.path.join(self._static, "index.html")
-        user = self.get_current_user()
         protocol = self.request.protocol
         host = self.request.host
+        user = self.get_current_user()
         base_url = f'{protocol}://{host}/{user["server"]}'
         self.render(index, python_base_url=base_url)
+
+    @web.addslash
+    @web.authenticated
+    @authorised
+    def post(self):
+        pass
 
 
 class UserProfileHandler(HubOAuthenticated, APIHandler):
@@ -78,8 +114,14 @@ class UserProfileHandler(HubOAuthenticated, APIHandler):
         self.set_header("Content-Type", 'application/json')
 
     @web.authenticated
+    @authorised
     def get(self):
         self.write(json.dumps(self.get_current_user()))
+
+    @web.authenticated
+    @authorised
+    def post(self):
+        pass
 
 
 # This is needed in order to pass the server context in addition to existing.
@@ -122,6 +164,17 @@ class UIServerGraphQLHandler(HubOAuthenticated, TornadoGraphQLHandler):
         return wider_context
 
     @web.authenticated
+    @authorised
+    async def get(self) -> None:
+        TornadoGraphQLHandler.get(self)
+
+    @web.authenticated
+    @authorised
+    async def post(self) -> None:
+        TornadoGraphQLHandler.post(self)
+
+    @web.authenticated
+    @authorised
     def prepare(self):
         super().prepare()
 
@@ -139,6 +192,16 @@ class UIServerGraphQLHandler(HubOAuthenticated, TornadoGraphQLHandler):
 class SubscriptionHandler(BaseHandler, HubOAuthenticated,
                           websocket.WebSocketHandler):
 
+    @web.authenticated
+    @authorised
+    def get(self) -> None:
+        BaseHandler.get(self)
+
+    @web.authenticated
+    @authorised
+    def post(self) -> None:
+        BaseHandler.post(self)
+
     def initialize(self, sub_server, resolvers):
         self.queue = Queue(100)
         self.subscription_server = sub_server
@@ -148,6 +211,7 @@ class SubscriptionHandler(BaseHandler, HubOAuthenticated,
         return GRAPHQL_WS
 
     @websockets_authenticated
+    @authorised
     def open(self, *args, **kwargs):
         IOLoop.current().spawn_callback(self.subscription_server.handle, self,
                                         self.context)
