@@ -45,7 +45,7 @@ def find_version(*file_paths):
 # NB: no graphene version specified; we only make light use of it in our own
 #     code, so graphene-tornado's transitive version should do.
 install_requires = [
-    'cylc-flow>=8.0b0',
+    'cylc-flow>=8.0b1',
     'jupyterhub==1.3.*',
     'tornado==6.1.*',
     'graphene-tornado==2.6.*',
