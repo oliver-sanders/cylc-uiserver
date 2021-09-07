@@ -128,6 +128,7 @@ def _authorise(
         handler.log.warning(f'Authorisation failed for {username}')
         return False
 
+
 def can_read(handler):
     """Checks if the user has permitted operation `read`
     """
@@ -140,6 +141,7 @@ def can_read(handler):
     ):
         return True
     return False
+
 
 class CylcAppHandler(JupyterHandler):
     """Base handler for Cylc endpoints.
