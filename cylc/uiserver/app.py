@@ -361,7 +361,8 @@ class CylcUIServer(ExtensionApp):
         self.set_sub_server()
 
         self.handlers.extend([
-            (   'cylc/version',
+            (
+                'cylc/version',
                 CylcVersionHandler,
                 {'auth': self.authobj}
             ),
