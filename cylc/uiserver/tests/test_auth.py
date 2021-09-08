@@ -16,10 +16,13 @@
 """Test authorisation and authentication HTTP response codes."""
 
 from functools import partial
+import json
 
+import asyncio
 import pytest
-
 from tornado.httpclient import HTTPClientError
+
+from cylc.uiserver.tests.jp_fetch import jp_ws_fetch
 
 
 @pytest.fixture
@@ -171,6 +174,117 @@ async def test_unauthorised(
     body
 ):
     await _test(jp_fetch, endpoint, code, message, body)
+
+
+@pytest.fixture
+def authorisation_middleware_instances(monkeypatch):
+    """Captures instances of the AuthorizationMiddleware class.
+
+    Returns a list which is updated with instances of AuthorizationMiddleware
+    created within the lifetime of the test function.
+    """
+    instances = []
+
+    def _init(self):
+        nonlocal instances
+        instances.append(self)
+
+    monkeypatch.setattr(
+        'cylc.uiserver.authorise.AuthorizationMiddleware.__init__',
+        _init
+    )
+
+    return instances
+
+
+@pytest.mark.integration
+@pytest.mark.usefixtures("mock_authentication_yossarian")
+async def test_authorisation_middleware_instances_rest(
+    patch_conf_files,
+    jp_fetch,
+    mock_authentication,
+    authorisation_middleware_instances
+):
+    """Test the AuthorizationMiddleware lifecycle.
+
+    Ensure that one AuthorizationMiddleware instance is created for each
+    request and that it is configured for the authenticated used.
+    """
+    # the GraphQL request
+    query = 'workflows { id }'
+    # the users we will perform the request as
+    users = [f'fake_user_{num}' for num in range(5)]
+    # we will perform two requests for the last user
+    users.append(users[-1])
+
+    for user in users:
+        # perform a graphql request as a fake user
+        mock_authentication(user=user)
+        with pytest.raises(HTTPClientError) as error:
+            await jp_fetch('cylc', 'graphql', method='POST', body=query)
+        # this request should fail for auth reasons but should still activate
+        # the autorisation code
+        assert error.value.code == 403
+
+    # we should have one middleware object per request
+    assert [
+        auth_middleware_inst.current_user
+        for auth_middleware_inst in authorisation_middleware_instances
+    ] == users
+
+    # double check that these instances are all unique
+    assert len(
+        set(authorisation_middleware_instances)
+    ) == len(authorisation_middleware_instances)
+
+
+@pytest.mark.integration
+@pytest.mark.usefixtures("mock_authentication_yossarian")
+async def test_authorisation_middleware_instances_websockets(
+    patch_conf_files,
+    jp_ws_fetch,
+    mock_authentication,
+    authorisation_middleware_instances
+):
+    """Test the AuthorizationMiddleware lifecycle.
+
+    Ensure that one AuthorizationMiddleware instance is created for each
+    request and that it is configured for the authenticated used.
+    """
+    # the WS message containing the GraphQL request
+    payload = {
+        'type': 'start',
+        'payload': {
+            'query': 'subscription { workflows { id } }',
+            'variables': None
+        }
+    }
+    # the users we will perform the request as
+    users = [f'fake_user_{num}' for num in range(5)]
+    # we will perform two requests for the last user
+    users.append(users[-1])
+
+    for user in users:
+        # perform a graphql request as a fake user
+        mock_authentication(user=user)
+        kwargs = {
+            "Sec-WebSocket-Protocol": 'graphql-ws'
+        }
+        ws = await jp_ws_fetch('cylc', 'subscriptions', headers=kwargs)
+        await ws.write_message(json.dumps(payload))
+        await asyncio.sleep(1)
+        ws.close()
+
+    # we should have one middleware object per request
+    assert [
+        auth_middleware_inst.current_user
+        for auth_middleware_inst in authorisation_middleware_instances
+    ] == users
+
+    # double check that these instances are all unique
+    assert len(
+        set(authorisation_middleware_instances)
+    ) == len(authorisation_middleware_instances)
 
 
 async def _test(jp_fetch, endpoint, code, message, body):
