@@ -74,7 +74,7 @@ class Authorization:
 
     CONTROL_OPS = [
         "ext-trigger",
-        "hold",
+        "pause",
         "kill",
         "message",
         "pause",
@@ -98,7 +98,7 @@ class Authorization:
         "read",
         "broadcast",
         "ext-trigger",
-        "hold",
+        "pause",
         "kill",
         "message",
         "pause",
