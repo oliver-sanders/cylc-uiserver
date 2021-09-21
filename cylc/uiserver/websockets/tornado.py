@@ -88,7 +88,6 @@ class TornadoSubscriptionServer(BaseSubscriptionServer):
         for mw in self.middleware:
             if hasattr(mw, "auth"):
                 self.current_user = parse_current_user(self.current_user)
-            # if isinstance(mw, AuthorizationMiddleware):
                 mw.current_user = self.current_user['name']
                 mw.auth = self.auth
         return dict(
