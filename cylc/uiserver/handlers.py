@@ -287,15 +287,14 @@ class UIServerGraphQLHandler(CylcAppHandler, TornadoGraphQLHandler):
         super(TornadoGraphQLHandler, self).initialize()
         self.auth = kwargs['auth']
         self.schema = schema
-        current_user = self.get_current_user()
-        current_user = parse_current_user(current_user)
+        self.current_user = parse_current_user(self.get_current_user())['name']
 
         if middleware is not None:
             self.middleware = list(self.instantiate_middleware(middleware))
         # Make authorization info available to auth middleware
         for mw in self.middleware:
             if isinstance(mw, AuthorizationMiddleware):
-                mw.current_user = current_user['name']
+                mw.current_user = self.current_user
                 mw.auth = self.auth
         self.executor = executor
         self.root_value = root_value

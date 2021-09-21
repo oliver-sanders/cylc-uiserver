@@ -435,11 +435,27 @@ def get_groups(username: str) -> List[str]:
     group_ids = os.getgrouplist(username, groupmax)
     group_ids.remove(groupmax)
     # turn list of group_ids into group names with group identifier prepended
-    return list(map(
-        lambda x: f'{Authorization.GRP_IDENTIFIER}{grp.getgrgid(x).gr_name}',
-        group_ids
-        )
-    )
+    return parse_group_ids(group_ids)
+
+
+def parse_group_ids(group_ids: List) -> List:
+    """Returns list of groups in the correct format for authorisation.
+
+    Args:
+        group_ids: List of users groups, in number format
+
+    Returns:
+        List: List of users groups, in id format with group identifier
+        prepended.
+    """
+    group_list = []
+    for x in group_ids:
+        try:
+            group_list.append(
+                f'{Authorization.GRP_IDENTIFIER}{grp.getgrgid(x).gr_name}')
+        except OverflowError:
+            continue
+    return group_list
 
 
 def expand_and_process_access_groups(permission_set: set) -> set:
