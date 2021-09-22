@@ -110,16 +110,20 @@ class CylcUIServer(ExtensionApp):
     AUTH_DESCRIPTION = '''
             Authorization can be granted at operation (mutation) level, i.e.
             specifically grant user access to execute Cylc commands, e.g.
-            `play`, `pause`, `edit`, `trigger` etc. For your convenience,
-            these operations have been mapped to access groups `READ`,
-            `CONTROL` and `ALL`.
+            ``play``, ``pause``, ``edit``, ``trigger`` etc. For your convenience,
+            these operations have been mapped to access groups ``READ``,
+            ``CONTROL`` and ``ALL``.
+
             To remove permissions, prepend the access group or operation with
-            `!`.
+            ``!``.
+
             Permissions are additive but negated permissions take precedence
             above additions.
+
             .. note::
-            Any authorization permissions granted to a user will be
-            applied to all workflows.
+
+               Any authorization permissions granted to a user will be
+               applied to all workflows.
     '''
 
     site_authorization = Dict(
