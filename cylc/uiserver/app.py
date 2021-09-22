@@ -175,7 +175,7 @@ class CylcUIServer(ExtensionApp):
             your limit for each user, as defined in the site_authorization
             configuration.
             ''' + AUTH_DESCRIPTION + '''
-            Example configuration, residing in `~/.cylc/hub/config.py`:
+            Example configuration, residing in `~/.cylc/hub/jupyter_config.py`:
         .. code-block:: python
          c.CylcUIServer.user_authorization = {
             "*": ["READ"],            # any authenticated user has READ access
