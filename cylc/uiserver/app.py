@@ -140,7 +140,8 @@ class CylcUIServer(ExtensionApp):
 
             { AUTH_DESCRIPTION }
 
-        Example Configuration:
+        .. rubric:: Example Configuration:
+
         .. code-block:: python
         c.CylcUIServer.site_authorization = {
     "*": {                              # For all ui-server owners,
