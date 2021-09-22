@@ -124,7 +124,7 @@ class CylcUIServer(ExtensionApp):
 
     site_authorization = Dict(
         config=True,
-        help='''
+        help=f'''
             Dictionary containing site limits and defaults for authorization.
             This configuration should be placed only in the site set
             configuration file and not the user configuration file (use
@@ -133,7 +133,9 @@ class CylcUIServer(ExtensionApp):
             If this configuration is empty, site authorization defaults to no
             configurable authorization and users will be unable to set any
             authorization.
-        ''' + AUTH_DESCRIPTION + '''
+
+            { AUTH_DESCRIPTION }
+
         Example Configuration:
         .. code-block:: python
         c.CylcUIServer.site_authorization = {
