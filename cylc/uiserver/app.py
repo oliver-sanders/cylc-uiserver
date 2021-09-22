@@ -134,6 +134,7 @@ class CylcUIServer(ExtensionApp):
             configuration file and not the user configuration file (use
             ``c.CylcUIServer.user_authorization`` for user defined
             authorization).
+
             If this configuration is empty, site authorization defaults to no
             configurable authorization and users will be unable to set any
             authorization.
