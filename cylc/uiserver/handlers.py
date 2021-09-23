@@ -75,7 +75,7 @@ def authorised(fun: Callable) -> Callable:
                 and _authorise(handler, user['name'], '')
             )
         ):
-            raise web.HTTPError(403, reason='authorisation insufficient')
+            raise web.HTTPError(403, reason='authorization insufficient')
         return fun(handler, *args, **kwargs)
     return _inner
 
@@ -125,7 +125,7 @@ def _authorise(
     if username == ME or can_read(handler=handler):
         return True
     else:
-        handler.log.warning(f'Authorisation failed for {username}')
+        handler.log.warning(f'Authorization failed for {username}')
         return False
 
 
