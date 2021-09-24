@@ -85,8 +85,8 @@ class Authorization:
         control_ops,
         all_ops
     ) -> None:
-        self.CONTROL_OPS = control_ops
-        self.ALL_OPS = all_ops
+        self.control_ops = control_ops
+        self.all_ops = all_ops
         self.owner = owner
         self.owner_auth_conf = self.set_auth_conf(owner_auth_conf)
         self.site_auth_config = self.set_auth_conf(site_auth_conf)
@@ -110,8 +110,8 @@ class Authorization:
             permission_set: processed permission set.
         """
         for action_group, expansion in {
-            Authorization.CONTROL: self.CONTROL_OPS,
-            Authorization.ALL: self.ALL_OPS,
+            Authorization.CONTROL: self.control_ops,
+            Authorization.ALL: self.all_ops,
                 Authorization.READ: Authorization.READ_OPS}.items():
             if action_group in permission_set:
                 permission_set.remove(action_group)
@@ -119,9 +119,9 @@ class Authorization:
         # Expand negated permissions
         for action_group, expansion in {
                 Authorization.NOT_CONTROL: list(
-                    map((lambda x: '!' + x), self.CONTROL_OPS)),
+                    map((lambda x: '!' + x), self.control_ops)),
                 Authorization.NOT_ALL: list(
-                    map((lambda x: '!' + x), self.ALL_OPS)),
+                    map((lambda x: '!' + x), self.all_ops)),
                 Authorization.NOT_READ: list(
                     map((lambda x: '!' + x), Authorization.READ_OPS))}.items():
             if action_group in permission_set:
@@ -227,7 +227,7 @@ class Authorization:
         """
         # For use in the ui, owner permissions (ALL operations) are set
         if access_user == self.owner:
-            return self.expand_and_process_access_groups(set(self.ALL_OPS))
+            return self.expand_and_process_access_groups(set(self.all_ops))
         # Otherwise process permissions for (non-uiserver owner) access_user
 
         access_user_dict = {'access_username': access_user,
@@ -429,7 +429,7 @@ class AuthorizationMiddleware:
             return Authorization.READ_OPERATION
         else:
             # Check it is a mutation in our schema
-            if self.auth and field_name in self.auth.ALL_OPS:
+            if self.auth and field_name in self.auth.all_ops:
                 return field_name
         return None
 
