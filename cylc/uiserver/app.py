@@ -45,7 +45,8 @@ from cylc.uiserver import (
 )
 from cylc.uiserver.authorise import (
     Authorization,
-    AuthorizationMiddleware
+    AuthorizationMiddleware,
+    get_list_of_mutations
 )
 from cylc.uiserver.data_store_mgr import DataStoreMgr
 from cylc.uiserver.handlers import (
@@ -146,10 +147,10 @@ class CylcUIServer(ExtensionApp):
         .. code-block:: python
 
            c.CylcUIServer.site_authorization = {
-    "*": {                              # For all ui-server owners,
-        "*": {                          # Any authenticated user
-            "default": "READ",          # Will have default read-only access
-        }
+           "*": {                              # For all ui-server owners,
+           "*": {                          # Any authenticated user
+           "default": "READ",          # Will have default read-only access
+           }
         "user1": {                      # user1
             "default": ["!ALL"],        # No privileges for all ui-server
                                         # owners.
@@ -366,7 +367,7 @@ class CylcUIServer(ExtensionApp):
         self.log.info(f'Serving UI from: {self.ui_path}')
 
     def initialize_handlers(self):
-        self.set_auth()
+        self.authobj = self.set_auth()
         self.set_sub_server()
 
         self.handlers.extend([
@@ -447,10 +448,15 @@ class CylcUIServer(ExtensionApp):
         )
 
     def set_auth(self):
-        self.authobj = Authorization(
+        """Create authorization object.
+        One for the lifetime of the UIServer.
+        """
+        return Authorization(
             getpass.getuser(),
             self.config.CylcUIServer.user_authorization,
-            self.config.CylcUIServer.site_authorization
+            self.config.CylcUIServer.site_authorization,
+            get_list_of_mutations(control=True),
+            get_list_of_mutations()
         )
 
     def initialize_templates(self):
