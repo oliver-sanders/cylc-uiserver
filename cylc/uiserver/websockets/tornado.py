@@ -72,7 +72,6 @@ class TornadoSubscriptionServer(BaseSubscriptionServer):
         for middleware in middlewares:
             if isclass(middleware):
                 if middleware == AuthorizationMiddleware:
-                    continue
                     mw = middleware()
                     mw.auth = auth
                     mw.current_user = current_user
@@ -165,7 +164,7 @@ class TornadoSubscriptionServer(BaseSubscriptionServer):
             self.instantiate_middleware(
                 self.middleware,
                 self.auth,
-                'oliver',  # TODO
+                request_context['current_user'],
             ),
             wrap_in_promise=False
         ),

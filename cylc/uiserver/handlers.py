@@ -377,5 +377,6 @@ class SubscriptionHandler(CylcAppHandler, websocket.WebSocketHandler):
         wider_context = {
             'request': self.request,
             'resolvers': self.resolvers,
+            'current_user': parse_current_user(self.get_current_user())['name']
         }
         return wider_context
