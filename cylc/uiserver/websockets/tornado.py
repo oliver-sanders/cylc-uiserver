@@ -24,6 +24,7 @@ from graphql_ws.constants import (
 from typing import Union, Awaitable, Any, List, Tuple, Dict, Optional
 
 from cylc.uiserver.handlers import parse_current_user
+from cylc.uiserver.authorise import AuthorizationMiddleware
 
 setup_observable_extension()
 
@@ -67,10 +68,17 @@ class TornadoSubscriptionServer(BaseSubscriptionServer):
         super().__init__(schema, keep_alive)
 
     @staticmethod
-    def instantiate_middleware(middlewares):
+    def instantiate_middleware(middlewares, auth, current_user):
         for middleware in middlewares:
             if isclass(middleware):
-                yield middleware()
+                if middleware == AuthorizationMiddleware:
+                    continue
+                    mw = middleware()
+                    mw.auth = auth
+                    mw.current_user = current_user
+                    yield mw
+                else:
+                    yield middleware()
                 continue
             yield middleware
 
@@ -79,26 +87,26 @@ class TornadoSubscriptionServer(BaseSubscriptionServer):
                        self).get_graphql_params(*args, **kwargs)
         # If middleware get instantiated here (optional), they will
         # be local/private to each subscription.
-        if self.middleware is not None:
-            middleware = list(
-                self.instantiate_middleware(self.middleware)
-            )
-        else:
-            middleware = self.middleware
-        for mw in self.middleware:
-            if hasattr(mw, "auth"):
-                self.current_user = parse_current_user(self.current_user)
-                mw.current_user = self.current_user['name']
-                mw.auth = self.auth
+        # if self.middleware is not None:
+        #     middleware = list(
+        #         self.instantiate_middleware(self.middleware)
+        #     )
+        # else:
+        #     middleware = self.middleware
+        # for mw in self.middleware:
+        #     if hasattr(mw, "auth"):
+        #         self.current_user = parse_current_user(self.current_user)
+        #         mw.current_user = self.current_user['name']
+        #         mw.auth = self.auth
         return dict(
             params,
             return_promise=True,
             executor=AsyncioExecutor(loop=self.loop),
             backend=self.backend,
-            middleware=MiddlewareManager(
-                *middleware,
-                wrap_in_promise=False
-            ),
+            # middleware=MiddlewareManager(
+            #     *middleware,
+            #     wrap_in_promise=False
+            # ),
         )
 
     async def _handle(self, ws, request_context):
@@ -152,8 +160,19 @@ class TornadoSubscriptionServer(BaseSubscriptionServer):
             await self.send_error(connection_context, op_id, e, GQL_CONNECTION_ERROR)
             await connection_context.close(1011)
 
+    def _get_middleware(self, request_context):
+        return MiddlewareManager(
+            self.instantiate_middleware(
+                self.middleware,
+                self.auth,
+                'oliver',  # TODO
+            ),
+            wrap_in_promise=False
+        ),
+
     def execute(self, request_context, params):
         params['context_value'] = request_context
+        params['middleware'] = self._get_middleware(request_context)
         return super().execute(request_context, params)
 
     async def send_execution_result(self, connection_context, op_id,
