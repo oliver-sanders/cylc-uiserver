@@ -52,6 +52,14 @@ class TornadoConnectionContext(BaseConnectionContext):
 
 
 class TornadoSubscriptionServer(BaseSubscriptionServer):
+    """GraphQL subscription server.
+
+    Middlewares:
+        Middleware can be used with this server. Middleware instances will
+        be shared by all operations so must be stateless.
+
+    """
+
     def __init__(
         self, schema,
         keep_alive=True,
@@ -62,41 +70,47 @@ class TornadoSubscriptionServer(BaseSubscriptionServer):
     ):
         self.loop = loop
         self.backend = backend or None
-        self.middleware = middleware
         self.auth = auth
+        self.middleware_mgr = self._instantiate_middleware(middleware)
         super().__init__(schema, keep_alive)
 
-    @staticmethod
-    def instantiate_middleware(middlewares):
+    def _instantiate_middleware(self, middlewares):
+        """Initialise the middleware for this subscription server.
+
+        Note:
+            These middleware instances are shared by all operations on this
+            server.
+
+        """
+        if not middlewares:
+            return None
+
+        middleware_instances = []
+
         for middleware in middlewares:
             if isclass(middleware):
-                yield middleware()
-                continue
-            yield middleware
+                mw = middleware()
+                if middleware == AuthorizationMiddleware:
+                    mw.auth = self.auth
+            else:
+                mw = middleware
+            middleware_instances.append(mw)
+
+        return MiddlewareManager(
+            *middleware_instances,
+            wrap_in_promise=False
+        )
 
     def get_graphql_params(self, *args, **kwargs):
-        params = super(TornadoSubscriptionServer,
-                       self).get_graphql_params(*args, **kwargs)
-        # If middleware get instantiated here (optional), they will
-        # be local/private to each subscription.
-        if self.middleware is not None:
-            middleware = list(
-                self.instantiate_middleware(self.middleware)
-            )
-        else:
-            middleware = self.middleware
-        for mw in self.middleware:
-            if mw == AuthorizationMiddleware:
-                mw.auth = self.auth
+        params = super(
+            TornadoSubscriptionServer, self
+        ).get_graphql_params(*args, **kwargs)
         return dict(
             params,
             return_promise=True,
             executor=AsyncioExecutor(loop=self.loop),
             backend=self.backend,
-            middleware=MiddlewareManager(
-                *middleware,
-                wrap_in_promise=False
-            ),
+            middleware=self.middleware_mgr,
         )
 
     async def _handle(self, ws, request_context):

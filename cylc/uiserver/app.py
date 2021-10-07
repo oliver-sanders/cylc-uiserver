@@ -515,7 +515,7 @@ class CylcUIServer(ExtensionApp):
             msg = (
                 f'{cls.__name__} instances ({len(instances)}):\n'
                 + '\n'.join(
-                    f'    id({obj}) {obj.current_user}'
+                    f'    id({obj})'  # {obj.current_user}'
                     for obj in instances
                 )
             )
