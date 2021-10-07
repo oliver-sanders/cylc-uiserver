@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import gc
 import getpass
 import os
 from pathlib import Path, PurePath
@@ -24,6 +25,7 @@ from pkg_resources import parse_version
 from tornado import ioloop
 from tornado.web import RedirectHandler
 from traitlets import (
+    Bool,
     Dict,
     Float,
     TraitError,
@@ -91,6 +93,22 @@ class CylcUIServer(ExtensionApp):
     examples = '''
         cylc gui    # start the cylc GUI
     '''
+
+    aliases = {
+        'track-auth-objs': 'CylcUIServer.track_auth_objs'
+    }
+
+    track_auth_objs = Bool(
+        False,
+        config=True,
+        help='''
+            Track instances of the middleware that provides authorization
+            for the GraphQL endpoints.
+
+            For use in development and security testing.
+        '''
+    )
+
     config_file_paths = list(
         map(
             str,
@@ -356,6 +374,23 @@ class CylcUIServer(ExtensionApp):
             self.scan_interval * 1000
         ).start()
 
+    def log_auth_objs(self):
+        objs = gc.get_objects()
+        for cls in (AuthorizationMiddleware,):
+            instances = [
+                obj
+                for obj in objs
+                if isinstance(obj, cls)
+            ]
+            msg = (
+                f'{cls.__name__} instances ({len(instances)}):\n'
+                + '\n'.join(
+                    f'    id({obj}) {obj.current_user}'
+                    for obj in instances
+                )
+            )
+            self.log.debug(msg)
+
     def initialize_settings(self):
         """Update extension settings.
 
@@ -367,6 +402,11 @@ class CylcUIServer(ExtensionApp):
         super().initialize_settings()
         self.log.info("Starting Cylc UI Server")
         self.log.info(f'Serving UI from: {self.ui_path}')
+        if self.track_auth_objs:
+            ioloop.PeriodicCallback(
+                self.log_auth_objs,
+                1 * 1000,
+            ).start()
 
     def initialize_handlers(self):
         self.authobj = self.set_auth()
