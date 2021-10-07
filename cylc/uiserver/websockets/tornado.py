@@ -23,6 +23,7 @@ from graphql_ws.constants import (
 
 from typing import Union, Awaitable, Any, List, Tuple, Dict, Optional
 
+from cylc.uiserver.authorise import AuthorizationMiddleware
 from cylc.uiserver.handlers import parse_current_user
 
 setup_observable_extension()
@@ -63,7 +64,6 @@ class TornadoSubscriptionServer(BaseSubscriptionServer):
         self.backend = backend or None
         self.middleware = middleware
         self.auth = auth
-        self.current_user = None
         super().__init__(schema, keep_alive)
 
     @staticmethod
@@ -86,9 +86,7 @@ class TornadoSubscriptionServer(BaseSubscriptionServer):
         else:
             middleware = self.middleware
         for mw in self.middleware:
-            if hasattr(mw, "auth"):
-                self.current_user = parse_current_user(self.current_user)
-                mw.current_user = self.current_user['name']
+            if mw == AuthorizationMiddleware:
                 mw.auth = self.auth
         return dict(
             params,
