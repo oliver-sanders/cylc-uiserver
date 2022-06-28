@@ -31,7 +31,7 @@ from graphql.language.base import print_ast
 from cylc.flow.data_store_mgr import WORKFLOW
 from cylc.flow.exceptions import CylcError, ServiceFileError
 from cylc.flow.network.resolvers import BaseResolvers
-from cylc.flow.workflow_files import init_clean
+from cylc.flow.scripts.clean import run
 
 
 class InvalidSchemaOptionError(CylcError):
@@ -54,13 +54,9 @@ OPT_CONVERTERS: Dict[str, Dict[str, Union[Callable, None]]] = {
         'rm': lambda opt, value: ('rm_dirs', [value] if value else None),
         'local_only': None,
         'remote_only': None,
-        'debug':
-            lambda opt, value:
-                ('verbosity', 2 if value is True else 0),
         'no_timestamp': lambda opt, value: ('log_timestamp', not value),
     }
 }
-WORKFLOW_RUNNING_MSG = 'You can\'t clean a running workflow'
 
 
 def snake_to_kebab(snake):
@@ -189,15 +185,17 @@ def _schema_opts_to_api_opts(
     return SimpleNamespace(**api_opts)
 
 
-def _clean(tokens, opts):
-    """Run Cylc Clean using `cylc.flow.workflow_files` api.
+def _clean(workflow_ids, opts):
+    """Helper funciton to call `cylc clean`.
+
+    Execute this function inside of an "executor" (note this is why we have
+    to set up asynio here).
     """
-    try:
-        init_clean(tokens.pop('workflow'), opts)
-    except ServiceFileError as exc:
-        return str(exc).split('\n')[0]
-    else:
-        return 'Workflow cleaned'
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    return loop.run_until_complete(
+        run(*workflow_ids, opts=opts)
+    )
 
 
 class Services:
@@ -227,29 +225,24 @@ class Services:
             opts = _schema_opts_to_api_opts(args, schema=CLEAN)
         except Exception as exc:
             return cls._error(exc)
-        # Hard set remote timeout.
-        opts.remote_timeout = "600"
 
-        # clean each requested flow
-        for tokens in workflows:
-            clean_func = partial(_clean, tokens, opts)
-            try:
-                log.info(f'Cleaning {tokens}')
-                string = await asyncio.wrap_future(
-                    executor.submit(clean_func)
-                )
-            except Exception as exc:
-                log.exception(exc)
-                return cls._error(exc)
-            else:
-                if string == WORKFLOW_RUNNING_MSG:
-                    log.error(ServiceFileError(WORKFLOW_RUNNING_MSG))
-                    return cls._error(WORKFLOW_RUNNING_MSG)
-                log.info(string)
+        opts.remote_timeout = "600"  # Hard set remote timeout.
+        opts.skip_interactive = True  # disable interactive prompts
 
-        # trigger a re-scan
-        await workflows_mgr.scan()
-        return cls._return("Workflow(s) cleaned")
+        workflow_ids = [tokens.workflow_id for tokens in workflows]
+
+        log.info(f'Cleaning {" ".join(workflow_ids)}')
+        try:
+            await asyncio.get_event_loop().run_in_executor(
+                executor,
+                partial(_clean, workflow_ids, opts=opts),
+            )
+        except ServiceFileError as exc:
+            return cls._error(str(exc).split('\n')[0])
+        else:
+            # trigger a re-scan
+            await workflows_mgr.scan()
+            return cls._return("Workflow(s) cleaned")
 
     @classmethod
     async def play(cls, workflows, args, workflows_mgr, log):

@@ -84,6 +84,10 @@ c.CylcUIServer.logging_config = {
             'level': 'INFO',
             'handlers': ['console', 'file'],
         },
+        'cylc': {
+            'level': 'DEBUG',
+            'handlers': ['console', 'file'],
+        },
     },
     'formatters': {
         'file_fmt': {
