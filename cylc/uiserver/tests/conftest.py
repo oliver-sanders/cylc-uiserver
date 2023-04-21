@@ -233,8 +233,8 @@ def mock_authentication(monkeypatch: pytest.MonkeyPatch):
             )
 
         monkeypatch.setattr(
-            'cylc.uiserver.handlers.CylcAppHandler.get_current_user',
-            lambda x: ret
+            'cylc.uiserver.handlers.CylcAppHandler.current_user',
+            ret,
         )
         monkeypatch.setattr(
             'cylc.uiserver.handlers.CylcAppHandler.get_login_url',

@@ -77,8 +77,8 @@ async def test_authorised_and_authenticated(
     [
         pytest.param(
             ('cylc', 'graphql'),
-            403,
-            'login redirect replaced by 403 for test purposes',
+            400,
+            'Bad Request',
             None,
             id='cylc/graphql',
         ),

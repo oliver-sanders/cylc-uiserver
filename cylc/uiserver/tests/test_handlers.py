@@ -56,7 +56,7 @@ class SubscriptionHandlerTest(AsyncHTTPTestCase):
             handler.get
             _current_user = lambda: {'name': getuser()}
         else:
-            handler.get_current_user = lambda: None
+            handler.current_user = None
         return handler
 
     @pytest.mark.usefixtures("mock_authentication")

@@ -66,7 +66,7 @@ def authorised(fun: Callable) -> Callable:
             dict,   # hub auth
             str,    # token auth or anonymous
 
-        ] = handler.get_current_user()
+        ] = handler.current_user
         if user is None or user == 'anonymous':
             # user is not authenticated - calls should not get this far
             # but the extra safety doesn't hurt
@@ -157,7 +157,7 @@ class CylcAppHandler(JupyterHandler):
     """Base handler for Cylc endpoints.
 
     This handler adds the Cylc authorisation layer which is triggered by
-    calling CylcAppHandler.get_current_user which is called by
+    accessing CylcAppHandler.current_user which is called by
     web.authenticated.
 
     When running as a Hub application the make_singleuser_app method patches
@@ -171,11 +171,13 @@ class CylcAppHandler(JupyterHandler):
 
     def initialize(self, auth):
         self.auth = auth
+        super().initialize()
 
     # Without this, there is no xsrf token from the GET which causes a 403 and
     # a missing _xsrf argument error on the first POST.
     def prepare(self):
         _ = self.xsrf_token
+        super().prepare()
 
     @property
     def hub_users(self):
@@ -268,8 +270,7 @@ class UserProfileHandler(CylcAppHandler):
     @web.authenticated
     @authorised
     def get(self):
-        user_info = self.get_current_user()
-
+        user_info = self.current_user
         user_info = parse_current_user(user_info)
 
         # add an entry for the workflow owner
@@ -338,13 +339,12 @@ class UIServerGraphQLHandler(CylcAppHandler, TornadoGraphQLHandler):
             'request': self.request,
             'resolvers': self.resolvers,
             'current_user': parse_current_user(
-                self.get_current_user()
+                self.current_user
             ).get('name'),
         }
 
-    @web.authenticated
     def prepare(self):
-        super().prepare()
+        return super(CylcAppHandler, self).prepare()
 
     @web.authenticated  # type: ignore[arg-type]
     async def execute(self, *args, **kwargs) -> 'ExecutionResult':
@@ -411,9 +411,7 @@ class SubscriptionHandler(CylcAppHandler, websocket.WebSocketHandler):
         return {
             'request': self.request,
             'resolvers': self.resolvers,
-            'current_user': parse_current_user(
-                self.get_current_user()
-            ).get('name'),
+            'current_user': parse_current_user(self.current_user).get('name'),
             'ops_queue': {},
             'sub_statuses': self.sub_statuses
         }
