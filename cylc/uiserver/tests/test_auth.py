@@ -32,7 +32,7 @@ async def test_cylc_handler(patch_conf_files, jp_fetch):
 
 
 @pytest.mark.integration
-@pytest.mark.usefixtures("mock_authentication")
+@pytest.mark.usefixtures("mock_authentication_yossarian")
 @pytest.mark.parametrize(
     'endpoint,code,message,body',
     [
@@ -77,8 +77,8 @@ async def test_authorised_and_authenticated(
     [
         pytest.param(
             ('cylc', 'graphql'),
-            403,
-            'login redirect replaced by 403 for test purposes',
+            400,
+            'Bad Request',
             None,
             id='cylc/graphql',
         ),
