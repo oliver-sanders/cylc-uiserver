@@ -32,7 +32,7 @@ async def test_cylc_handler(patch_conf_files, jp_fetch):
 
 
 @pytest.mark.integration
-@pytest.mark.usefixtures("mock_authentication")
+@pytest.mark.usefixtures("mock_authentication_yossarian")
 @pytest.mark.parametrize(
     'endpoint,code,message,body',
     [

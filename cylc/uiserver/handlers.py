@@ -81,7 +81,7 @@ def authorised(fun: Callable) -> Callable:
             # password has full control
             pass
 
-        elif not _authorise(handler, user['name']):
+        elif not _authorise(handler, user.username):
             # other authentication (e.g. JupyterHub auth), check the user has
             # read permissions for Cylc
             raise web.HTTPError(403, reason='authorization insufficient')
@@ -245,7 +245,7 @@ class UserProfileHandler(CylcAppHandler):
         self.set_header("Content-Type", 'application/json')
 
     @web.authenticated
-    @authorised
+    # @authorised  TODO: I can't think why we would want to authorise this
     def get(self):
         user_info = {
             'name': get_username(self)
