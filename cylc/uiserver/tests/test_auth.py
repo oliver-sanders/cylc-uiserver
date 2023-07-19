@@ -22,8 +22,7 @@ from tornado.httpclient import HTTPClientError
 
 
 @pytest.mark.integration
-@pytest.mark.usefixtures("mock_authentication")
-async def test_cylc_handler(patch_conf_files, jp_fetch):
+async def test_cylc_handler(patch_conf_files, jp_fetch, auth_yossarian):
     """The Cylc endpoints have been added and work."""
     resp = await jp_fetch(
         'cylc', 'userprofile', method='GET'
@@ -32,7 +31,6 @@ async def test_cylc_handler(patch_conf_files, jp_fetch):
 
 
 @pytest.mark.integration
-@pytest.mark.usefixtures("mock_authentication_yossarian")
 @pytest.mark.parametrize(
     'endpoint,code,message,body',
     [
@@ -60,6 +58,7 @@ async def test_cylc_handler(patch_conf_files, jp_fetch):
     ]
 )
 async def test_authorised_and_authenticated(
+    auth_yossarian,
     patch_conf_files,
     jp_fetch,
     endpoint,
@@ -71,14 +70,13 @@ async def test_authorised_and_authenticated(
 
 
 @pytest.mark.integration
-@pytest.mark.usefixtures("mock_authentication_none")
 @pytest.mark.parametrize(
     'endpoint,code,message,body',
     [
         pytest.param(
             ('cylc', 'graphql'),
-            400,
-            'Bad Request',
+            403,
+            'Forbidden',
             None,
             id='cylc/graphql',
         ),
@@ -92,13 +90,14 @@ async def test_authorised_and_authenticated(
         pytest.param(
             ('cylc', 'userprofile'),
             403,
-            'login redirect replaced by 403 for test purposes',
+            'Forbidden',
             None,
             id='cylc/userprofile',
         )
     ]
 )
 async def test_unauthenticated(
+    auth_none,
     patch_conf_files,
     jp_fetch,
     endpoint,
@@ -110,7 +109,6 @@ async def test_unauthenticated(
 
 
 @pytest.mark.integration
-@pytest.mark.usefixtures("mock_authentication_yossarian")
 @pytest.mark.parametrize(
     'endpoint,code,message,body',
     [
@@ -131,15 +129,18 @@ async def test_unauthenticated(
             id='cylc/subscriptions',
         ),
         pytest.param(
+            # the userprofile is information about the authenticated user not
+            # the server owner
             ('cylc', 'userprofile'),
-            403,
-            'authorization insufficient',
+            200,
+            '',
             None,
             id='cylc/userprofile',
         )
     ]
 )
 async def test_unauthorised(
+    auth_yossarian,
     patch_conf_files,
     jp_fetch,
     endpoint,

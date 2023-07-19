@@ -201,22 +201,126 @@ def authorisation_false(monkeypatch):
     )
 
 
+def _auth(user, jp_serverapp, monkeypatch):
+    def auth(*args):
+        args[-1]._jupyter_current_user = user
+        return user
+
+    monkeypatch.setattr(
+        jp_serverapp.identity_provider,
+        'get_user',
+        auth,
+    )
+
+    def redirect(handler, url):
+        if url.startswith(handler.get_login_url()):
+            raise HTTPError(403)
+
+    monkeypatch.setattr(
+        'cylc.uiserver.handlers.CylcAppHandler.redirect',
+        redirect,
+    )
+
+
+@pytest.fixture
+def auth_none(jp_serverapp, monkeypatch):
+    """Make it look like we are not authenticated."""
+    def auth(*args):
+        args[-1]._jupyter_current_user = None
+        return None
+
+    monkeypatch.setattr(
+        jp_serverapp.identity_provider,
+        'get_user',
+        auth,
+    )
+
+    def redirect(handler, url):
+        if url.startswith(handler.get_login_url()):
+            raise HTTPError(403)
+
+    monkeypatch.setattr(
+        'cylc.uiserver.handlers.CylcAppHandler.redirect',
+        redirect,
+    )
+
+    # monkeypatch.setattr()
+
+
+@pytest.fixture
+def auth_yossarian(jp_serverapp, monkeypatch):
+    """Make it look like we are authenticated as a used called "yossarian"."""
+    _auth(User('yossarian'), jp_serverapp, monkeypatch)
+
+
+def constant(func):
+    """Decorator preventing reassignment"""
+
+    def fset(self, value):
+        return value
+
+    def fget(self):
+        return func()
+
+    return property(fget, fset)
+
+
 @pytest.fixture
 def mock_authentication(monkeypatch: pytest.MonkeyPatch):
     def _mock_authentication(username=None, is_token_authenticated=False):
-        monkeypatch.setattr(
-            'cylc.uiserver.handlers.is_token_authenticated',
-            lambda x: is_token_authenticated,
-        )
+        # monkeypatch.setattr(
+        #     'cylc.uiserver.handlers.is_token_authenticated',
+        #     lambda x: is_token_authenticated,
+        # )
 
         user = None
         if username:
             user = User(username)
 
+        @constant
+        def get_user():
+            print('HERE')
+            nonlocal user
+            return user
+
         monkeypatch.setattr(
             'cylc.uiserver.handlers.CylcAppHandler.current_user',
-            user,
+            get_user,
         )
+
+        # def _wrap_prepare(method):
+        #     async def prepare(self, *args, **kwargs):
+        #         nonlocal method
+        #         if inspect.iscoroutinefunction(method):
+        #             ret = await method(self, *args, **kwargs)
+        #         else:
+        #             ret = method(self, *args, **kwargs)
+        #         self._jupyter_current_user = user
+        #         breakpoint()
+        #         return ret
+
+        #     return prepare
+
+        # from cylc.uiserver.handlers import CylcAppHandler
+
+        # monkeypatch.setattr(
+        #     'cylc.uiserver.handlers.CylcAppHandler.prepare',
+        #     _wrap_prepare(CylcAppHandler.prepare)
+        # )
+        # monkeypatch.setattr(
+        #     'cylc.uiserver.handlers.SubscriptionHandler.prepare',
+        #     _wrap_prepare(CylcAppHandler.prepare)
+        # )
+
+        # breakpoint()
+
+
+
+
+        # monkeypatch.setattr(
+        #     'cylc.uiserver.handlers.CylcAppHandler._jupyter_current_user',
+        #     user,
+        # )
 
         # monkeypatch.setattr(
         #     'cylc.uiserver.handlers.CylcAppHandler.get_login_url',

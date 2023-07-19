@@ -67,6 +67,11 @@ def authorised(fun: Callable) -> Callable:
         nonlocal fun
         user: JPSUser = handler.current_user
 
+        if user == 'anonymous':
+            # TODO: use .logged_in?
+            # https://github.com/jupyter-server/jupyter_server/blob/c8fff464f5fb4565ee045e68bb00bd7c87ce01f0/jupyter_server/base/handlers.py#L187
+            raise web.HTTPError(403, reason='authorization insufficient')
+
         if not user or not user.username:
             # the user is only truthy if they have authenticated successfully
             raise web.HTTPError(403, reason='authorization insufficient')
