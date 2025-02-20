@@ -39,7 +39,7 @@ def test_make_task_query_1():
     conn.executemany(
         'INSERT into task_jobs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
         [('1', 'Task_1', '01', '{1}', 0, 1,
-          '2022-12-14T15:00:00Z', '2022-12-14T15:01:00Z', 0,
+          '2022-12-14T15:00:00Z', '2022-12-14T15:01:00Z', 'succeeded',
           '2022-12-14T15:01:00Z', '2022-12-14T15:10:00Z', None, 0,
           'MyPlatform', 'User', 'UsersJob')
          ])
@@ -71,7 +71,7 @@ def test_make_task_query_1():
     assert return_value[0]['run_quartiles'][1] == 540
     assert return_value[0]['total_quartiles'][1] == 600
     assert return_value[0]['started_time'] == '2022-12-14T15:01:00Z'
-    assert return_value[0]['state'] == 0
+    assert return_value[0]['state'] == 'succeeded'
     assert return_value[0]['std_dev_queue_time'] == pytest.approx(0.0, 0.01)
     assert return_value[0]['std_dev_run_time'] == pytest.approx(0.0, 0.01)
     assert return_value[0]['std_dev_total_time'] == pytest.approx(0.0, 0.01)
@@ -95,11 +95,11 @@ def test_make_task_query_2():
     conn.executemany(
         'INSERT into task_jobs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
         [('1', 'Task_1', '01', '{1}', 0, 1,
-          '2022-12-14T15:00:00Z', '2022-12-14T15:01:00Z', 0,
+          '2022-12-14T15:00:00Z', '2022-12-14T15:01:00Z', 'succeeded',
           '2022-12-14T15:01:00Z', '2022-12-14T15:10:00Z', None, 0,
           'MyPlatform', 'User', 'UsersJob'),
          ('2', 'Task_1', '01', '{1}', 0, 1,
-          '2022-12-15T15:00:00Z', '2022-12-15T15:01:15Z', 0,
+          '2022-12-15T15:00:00Z', '2022-12-15T15:01:15Z', 'succeeded',
           '2022-12-15T15:01:16Z', '2022-12-15T15:12:00Z', None, 0,
           'MyPlatform', 'User', 'UsersJob')
          ])
@@ -131,7 +131,7 @@ def test_make_task_query_2():
     assert return_value[0]['run_quartiles'][1] == 644
     assert return_value[0]['total_quartiles'][1] == 720
     assert return_value[0]['started_time'] == '2022-12-15T15:01:16Z'
-    assert return_value[0]['state'] == 0
+    assert return_value[0]['state'] == 'succeeded'
     assert return_value[0]['std_dev_queue_time'] == pytest.approx(8.00, 0.01)
     assert return_value[0]['std_dev_run_time'] == pytest.approx(52.0, 0.01)
     assert return_value[0]['std_dev_total_time'] == pytest.approx(60.0, 0.01)
@@ -155,15 +155,15 @@ def test_make_task_query_3():
     conn.executemany(
         'INSERT into task_jobs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
         [('1', 'Task_1', '01', '{1}', 0, 1,
-          '2022-12-14T15:00:00Z', '2022-12-14T15:01:00Z', 0,
+          '2022-12-14T15:00:00Z', '2022-12-14T15:01:00Z', 'succeeded',
           '2022-12-14T15:01:00Z', '2022-12-14T15:10:00Z', None, 0,
           'MyPlatform', 'User', 'UsersJob'),
          ('2', 'Task_1', '01', '{1}', 0, 1,
-          '2022-12-15T15:00:00Z', '2022-12-15T15:01:15Z', 0,
+          '2022-12-15T15:00:00Z', '2022-12-15T15:01:15Z', 'succeeded',
           '2022-12-15T15:01:16Z', '2022-12-15T15:12:00Z', None, 0,
           'MyPlatform', 'User', 'UsersJob'),
          ('3', 'Task_1', '01', '{1}', 0, 1,
-          '2022-12-16T15:00:00Z', '2022-12-16T15:01:15Z', 0,
+          '2022-12-16T15:00:00Z', '2022-12-16T15:01:15Z', 'succeeded',
           '2022-12-16T15:01:16Z', '2022-12-16T15:12:00Z', None, 0,
           'MyPlatform', 'User', 'UsersJob')
          ])
@@ -196,7 +196,7 @@ def test_make_task_query_3():
     assert return_value[0]['run_quartiles'][1] == 644
     assert return_value[0]['total_quartiles'][1] == 720
     assert return_value[0]['started_time'] == '2022-12-16T15:01:16Z'
-    assert return_value[0]['state'] == 0
+    assert return_value[0]['state'] == 'succeeded'
     assert return_value[0]['std_dev_queue_time'] == pytest.approx(7.54, 0.01)
     assert return_value[0]['std_dev_run_time'] == pytest.approx(49.02, 0.01)
     assert return_value[0]['std_dev_total_time'] == pytest.approx(56.56, 0.01)
@@ -247,7 +247,7 @@ def test_make_jobs_query_1():
     assert return_value[0]['name'] == 'Task_1'
     assert return_value[0]['platform'] == 'MyPlatform'
     assert return_value[0]['started_time'] == '2022-12-14T15:01:00Z'
-    assert return_value[0]['state'] == 0
+    assert return_value[0]['state'] == 'succeeded'
     assert return_value[0]['submit_num'] == 1
     assert return_value[0]['submitted_time'] == '2022-12-14T15:00:00Z'
 
@@ -258,7 +258,7 @@ def test_make_jobs_query_1():
     assert return_value[1]['name'] == 'Task_1'
     assert return_value[1]['platform'] == 'MyPlatform'
     assert return_value[1]['started_time'] == '2022-12-15T15:01:16Z'
-    assert return_value[1]['state'] == 0
+    assert return_value[1]['state'] == 'succeeded'
     assert return_value[1]['submit_num'] == 1
     assert return_value[1]['submitted_time'] == '2022-12-15T15:00:00Z'
 
