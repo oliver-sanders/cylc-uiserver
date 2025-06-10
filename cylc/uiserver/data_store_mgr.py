@@ -210,6 +210,28 @@ class DataStoreMgr:
             self.w_subs[w_id].stop()
             del self.w_subs[w_id]
 
+    @log_call
+    def abort_workflow(self, w_id, abort_reason):
+        """Mark a stopped workflow as aborted."""
+        delta = DELTAS_MAP[ALL_DELTAS]()
+        delta.workflow.time = time.time()
+        flow = delta.workflow.updated
+        flow.id = w_id
+        flow.stamp = f'{w_id}@{delta.workflow.time}'
+
+        flow.log_records = [
+            PbLogRecord(
+                level='CRITICAL', message=f'Workflow aborted: {abort_reason}'
+            )
+        ]
+
+        # Apply to existing workflow data
+        if 'delta_times' not in self.data[w_id]:
+            self.data[w_id]['delta_times'] = {WORKFLOW: 0.0}
+        self._apply_all_delta(w_id, delta)
+        # Queue delta for subscription push
+        self._delta_store_to_queues(w_id, ALL_DELTAS, delta)
+
     def get_workflows(self):
         """Return all workflows the data store is currently tracking.
 

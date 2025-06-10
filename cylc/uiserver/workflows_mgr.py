@@ -194,6 +194,7 @@ class WorkflowsManager:  # noqa: SIM119
             if not flow.get('contact'):
                 # this flow isn't running
                 inactive.add(wid)
+
                 if (
                     # if the workflow has previously started...
                     self.workflows.get(wid, {}).get(CFF.UUID)
@@ -277,6 +278,12 @@ class WorkflowsManager:  # noqa: SIM119
         if wid in self.workflows:
             self.workflows.pop(wid)
 
+    async def _abort(self, wid, flow):
+        self.workflows[wid]['contact.aborted'] = flow['contact.aborted']
+        self.uiserver.data_store_mgr.abort_workflow(
+            wid, flow.get('abort reason', 'Cause unknown')
+        )
+
     async def update(self) -> None:
         """Scans for workflows, handles any state changes.
 
@@ -353,6 +360,10 @@ class WorkflowsManager:  # noqa: SIM119
                     # connect to the new workflow
                     cmds.append(self._connect(wid, flow))
                 run(*cmds)
+
+            if flow and flow.get('contact.aborted') and wid in self.workflows and not self.workflows[wid].get('contact.aborted'):
+
+                self._abort(wid, flow)
 
         # wait for everything we have actioned to complete before returning
         await asyncio.gather(*tasks)
