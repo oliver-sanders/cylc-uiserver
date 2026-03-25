@@ -61,7 +61,14 @@ log-file viewer. To enable Cylc Review, add the following to your
 
 .. code-block:: python
 
+   from cylc.uiserver.ws import get_review_service_config
    c.JupyterHub.services = [get_review_service_config()]
+   c.JupyterHub.load_roles = [
+       {
+           "name": "user",
+           "scopes": ["self", "access:services!service=cylc-review"],
+       },
+   ]
 
 """
 

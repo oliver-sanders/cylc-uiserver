@@ -30,19 +30,19 @@ from cylc.uiserver.review import CylcReviewService
 from cylc.flow.terminal import cli_function
 from cylc.uiserver.ws import _ws_init, _get_server_status
 
+START = 'start'
+STOP = 'stop'
 
+# This is only required because auto_add kwarg for CylcOptionParser has
+# become broken - https://github.com/cylc/cylc-flow/issues/7251
+# This should be fixed by https://github.com/cylc/cylc-uiserver/issues/800
 IRRELEVANT_OPTS = [
-    '--host',
-    '--user',
     '--verbose',
     '--debug',
     '--quiet',
     '--timestamp',
     '--no-timestamp',
-    '--color',
 ]
-START = 'start'
-STOP = 'stop'
 
 
 def get_option_parser():
@@ -52,6 +52,8 @@ def get_option_parser():
             COP.optional(("start", "Start ad-hoc web service server.")),
             COP.optional(("stop", "Stop ad-hoc web service server.")),
         ],
+        # auto_add=False,
+        color=False,
     )
 
     parser.add_option(

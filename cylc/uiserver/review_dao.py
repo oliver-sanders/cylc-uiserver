@@ -34,6 +34,8 @@ from cylc.flow.task_state import (
 from cylc.flow.workflow_files import WorkflowFiles
 
 TASK_STATUS_GROUPS = {
+    # Cylc review's Cylc 7 based view of what is "active" is not the same
+    # As Cylc 8's:
     "active": list(TASK_STATUSES_ACTIVE | TASK_STATUSES_NEVER_ACTIVE),
     "fail": list(TASK_STATUSES_FAILURE),
     "success": list(TASK_STATUSES_SUCCESS)

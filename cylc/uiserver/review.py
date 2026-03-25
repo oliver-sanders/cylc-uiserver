@@ -530,11 +530,11 @@ class CylcReviewService:
         elif order == "name_desc":
             data["entries"].sort(key=lambda entry: entry["name"], reverse=True)
         elif order == "time_asc":
-            data['entries'] = self.sort_workflows_by_time(
+            data['entries'] = self.sort_workflows(
                 data['entries'], reverse=True
             )
         else:  # order == "time_desc"
-            data['entries'] = self.sort_workflows_by_time(
+            data['entries'] = self.sort_workflows(
                 data['entries']
             )
 
@@ -554,13 +554,19 @@ class CylcReviewService:
             rosie_suite_info = os.path.join(user_suite_dir, "rose-suite.info")
             if os.path.isfile(rosie_suite_info):
                 rosie_info = {}
-                with contextlib.suppress(IOError):
-                    for line in open(   # noqa: SIM115
-                        rosie_suite_info, 'rb'
-                    ).readlines():
+                with (
+                    contextlib.suppress(IOError),
+                    open(rosie_suite_info, 'rb') as handle
+                ):
+                    for line in handle.readlines():
                         line = line.decode('utf-8', errors='replace')
-                        if not line.strip().startswith('#') and '=' in line:
-                            rosie_key, rosie_val = line.strip().split("=", 1)
+                        if (
+                            not line.strip().startswith('#')
+                            and '=' in line
+                        ):
+                            rosie_key, rosie_val = line.strip().split(
+                                "=", 1
+                            )
                             if rosie_key in ("project", "title"):
                                 rosie_info[rosie_key] = rosie_val
                 entry["info"].update(rosie_info)
@@ -1103,9 +1109,12 @@ class CylcReviewService:
         return self._check_dir_access(path)
 
     @staticmethod
-    def sort_workflows_by_time(workflows, reverse=False):
-        """Sort workflows with last active cycle time by that,
-        failing which, sort by name.
+    def sort_workflows(workflows, reverse=False):
+        """Sort by last_activity_time descending then name ascending.
+
+        A last_activity_time of None is interpreted as time immemorial, i.e,
+        workflows which have not yet started should sort after workflows which
+        have.
 
         Examples:
             >>> workflows = [
@@ -1114,28 +1123,37 @@ class CylcReviewService:
             ... {'name': 'first', 'last_activity_time': '20000101T0000Z'},
             ... {'name': 'last', 'last_activity_time': '21000101T0000Z'},
             ... ]
-            >>> this = CylcReviewService.sort_workflows_by_time
-            >>> [i['name'] for i in this(workflows)]
+
+            >>> [
+            ...     i['name'] for i in
+            ...     CylcReviewService.sort_workflows(workflows)
+            ... ]
             ['last', 'first', 'AAA', 'zzz']
-            >>> [i['name'] for i in this(workflows, reverse=True)]
+
+            >>> [
+            ...     i['name'] for i in
+            ...     CylcReviewService.sort_workflows(workflows, reverse=True)
+            ... ]
             ['zzz', 'AAA', 'first', 'last']
+
         """
-        # Sort workflows with last activity time by that time
-        has_last_activity_time = [
-            wf for wf in workflows if wf[LAST_ACTIVITY_TIME]
-        ]
-        has_last_activity_time.sort(
-            key=lambda wf: wf[LAST_ACTIVITY_TIME], reverse=not reverse)
 
-        # Sort workflows with no last activity time lexically.
-        no_last_activity_time = [
-            wf for wf in workflows if not wf[LAST_ACTIVITY_TIME]
-        ]
-        no_last_activity_time.sort(key=lambda wf: wf['name'], reverse=reverse)
+        class Workflow(dict):
+            def __lt__(self, other):
+                return (self['last_activity_time'] or '0') > (
+                    other['last_activity_time'] or '0'
+                ) or self['name'] < other['name']
 
+            def __eq__(self, other):
+                return (
+                    self['last_activity_time'] == other['last_activity_time']
+                    and self['name'] == other['name']
+                )
+
+        ret = sorted([Workflow(workflow) for workflow in workflows])
         if reverse:
-            return no_last_activity_time + has_last_activity_time
-        return has_last_activity_time + no_last_activity_time
+            return reversed(ret)
+        return ret
 
     @staticmethod
     def _has_shebang(file):

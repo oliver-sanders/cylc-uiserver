@@ -157,7 +157,7 @@ def get_util_home(*args):
     If args are specified, they are added to the end of returned path.
 
     """
-    return str(Path(__file__).parent / '/'.join(args))
+    return os.path.join(Path(__file__).parent, *args)
 
 
 def get_review_service_config(
