@@ -102,7 +102,7 @@ jobs:
           # Run tests on Cylc Review
           export CYLC_COVERAGE=1
           export CYLC_COVERAGE_BASE=$PWD
-          ./etc/bin/run-functional-tests
+          ./etc/bin/run-functional-tests -vv tests/functional/cylc-review/08-suites-page.t
 
       - name: Debug
         if: failure() && steps.review_tests.outcome == 'failure'

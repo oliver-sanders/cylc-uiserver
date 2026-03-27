@@ -531,7 +531,7 @@ for item in sys.argv[2:]:
         for key in keys:
             if isinstance(key, dict):
                 for datum_item in datum:
-                    if all([datum_item.get(k) == v for k, v in key.items()]):
+                    if all(datum_item.get(k) == v for k, v in key.items()):
                         datum = datum_item
                         break
                 else:
@@ -539,6 +539,7 @@ for item in sys.argv[2:]:
             else:
                 datum = datum[key]
         if datum != value:
+            print(f'Could not find "{keys}" in {data}', file=sys.stderr)
             raise ValueError((item, datum))
     except IndexError:
         print(data)
