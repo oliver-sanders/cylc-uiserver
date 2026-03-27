@@ -1150,9 +1150,9 @@ class CylcReviewService:
                     and self['name'] == other['name']
                 )
 
-        ret = sorted([Workflow(workflow) for workflow in workflows])
+        ret = sorted(workflows, key=Workflow)
         if reverse:
-            return reversed(ret)
+            return list(reversed(ret))
         return ret
 
     @staticmethod
